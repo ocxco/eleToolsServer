@@ -1,8 +1,10 @@
 <?php
 namespace frontend\controllers;
 
+use http\Exception;
 use Yii;
 use yii\base\InvalidParamException;
+use yii\base\UserException;
 use yii\web\BadRequestHttpException;
 use yii\web\Controller;
 use yii\filters\VerbFilter;
@@ -12,11 +14,12 @@ use frontend\models\PasswordResetRequestForm;
 use frontend\models\ResetPasswordForm;
 use frontend\models\SignupForm;
 use frontend\models\ContactForm;
+use yii\web\HttpException;
 
 /**
  * Site controller
  */
-class SiteController extends Controller
+class SiteController extends BaseController
 {
     /**
      * {@inheritdoc}
@@ -55,14 +58,36 @@ class SiteController extends Controller
     public function actions()
     {
         return [
-            'error' => [
-                'class' => 'yii\web\ErrorAction',
-            ],
             'captcha' => [
                 'class' => 'yii\captcha\CaptchaAction',
                 'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null,
             ],
         ];
+    }
+
+    public function actionError() {
+        $exception = Yii::$app->getErrorHandler()->exception;
+
+        if (empty($exception)) {
+            $this->responseJson('Not Found', null, self::STATUS_NOT_FOUND);
+        }
+        if ($exception instanceof HttpException) {
+            $code = $exception->statusCode;
+        } else {
+            $code = $exception->getCode();
+        }
+        $name = "";
+        if ($exception instanceof Exception) {
+            $name = $exception->getName();
+        }
+        if ($code) {
+            $name .= " (#$code)";
+        }
+        $message = "未知错误";
+        if ($exception instanceof UserException) {
+            $message = $exception->getMessage();
+        }
+        $this->responseJson($message, $name, $code);
     }
 
     /**
