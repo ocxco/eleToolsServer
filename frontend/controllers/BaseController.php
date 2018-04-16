@@ -29,6 +29,9 @@ class BaseController extends Controller
     public function init()
     {
         parent::init();
+        if (Yii::$app->request->isOptions) {
+            $this->responseJson('success', null, self::STATUS_SUCCESS);
+        }
         $data = file_get_contents('php://input');
         $data = json_decode($data, true);
         if (empty($data['user']) || $data['user'] !== $this->user) {
@@ -45,7 +48,11 @@ class BaseController extends Controller
      *
      * @return void
      */
-    public function responseJson($msg, $data = null, $code = self::STATUS_FAILED, $headers = array())
+    public function responseJson($msg, $data = null, $code = self::STATUS_FAILED, $headers = [
+        'Access-Control-Allow-Origin' => '*',
+        'Access-Control-Allow-Method' => 'POST,GET,OPTIONS',
+        'Access-Control-Allow-Headers' => 'Content-type',
+    ])
     {
         $return = [
             'code' => $code,
@@ -63,6 +70,7 @@ class BaseController extends Controller
                 Yii::$app->response->headers->add($key, $header);
             }
         }
+
         Yii::$app->response->format = Response::FORMAT_JSON;
         Yii::$app->response->statusCode = $code;
         Yii::$app->response->data = $return;
